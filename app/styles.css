@@ -64,60 +64,23 @@ section {
     flex: 1.5;
 }
 
-/* Score Visualization Styling */
-#output-visualization {
-    display: flex;
-    flex-direction: column;
-    height: 300px;
-    /* Define a fixed height for the bar chart area */
-    margin-top: 20px;
-}
-
-.score-bars {
-    display: flex;
-    align-items: flex-end;
-    /* Bars grow upwards */
-    height: 100%;
-    border-bottom: 1px solid #ccc;
-    gap: 5px;
-}
-
-.score-bar {
-    width: 10%;
-    /* 10 bars = 10% each */
-    background-color: #007bff;
-    transition: height 0.3s ease-out;
-    /* Smooth transition for updates */
-    margin-right: 2px;
-}
-
-.score-labels {
-    display: flex;
-    width: 100%;
-    justify-content: space-around;
-    padding-top: 5px;
-    font-weight: bold;
-}
-
-.score-labels span {
-    width: 10%;
-    text-align: center;
-}
-
 /* --- Network Diagram Styles --- */
 .network-diagram {
     position: relative;
-    width: 500px;
-    height: 300px;
-    margin: 20px auto;
+    height: 300px; /* Fixed height for the diagram */
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #network-wires {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1;
-    /* Lines drawn underneath nodes */
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Draw wires behind nodes */
 }
 
 .layer-wrapper {
@@ -126,42 +89,52 @@ section {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2;
-    /* Nodes sit on top of lines */
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px 0;
+    z-index: 2; /* Nodes are on top */
 }
 
-/* Hidden Layer Styling */
-.layer-hidden {
-    position: relative;
+.layer-input,
+.layer-hidden,
+.layer-output {
     height: 100%;
-    width: 50%;
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    align-items: flex-start;
+    align-items: center;
 }
 
-.hidden-node {
+.node {
+    border-radius: 50%;
+    background-color: #ccc;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.layer-input .node {
+    width: 4px;
+    height: 4px;
+}
+
+.layer-hidden .node {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background-color: #0099ff;
-    transition: opacity 0.1s;
-    margin: 1px 0;
 }
 
-/* Output Layer Styling */
-#layer-output {
-    position: relative;
-    height: 100%;
-    width: 35%;
+.layer-output .node {
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 123, 255, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    color: white;
+    font-weight: bold;
 }
 
-/* Ensure bars are correctly sized for the new layout */
-.score-bars {
-    height: 80%;
+.layer-output .node.predicted {
+    background-color: #28a745; /* Green for predicted */
+    transform: scale(1.2); /* Make it pop */
 }

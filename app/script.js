@@ -3,155 +3,226 @@ const API_URL = 'http://127.0.0.1:8000/predict';
 const canvas = document.getElementById('drawing-canvas');
 const ctx = canvas.getContext('2d');
 const predictionOutput = document.getElementById('prediction-output');
-const scoreBarsContainer = document.querySelector('.score-bars');
+const wireCanvas = document.getElementById('network-wires');
+const wireCtx = wireCanvas.getContext('2d');
+
+// --- Network Structure ---
+// Simplified for visualization purposes
+const LAYERS = {
+    'layer-input': 20,
+    'layer-hidden-1': 16,
+    'layer-hidden-2': 12,
+    'layer-output': 10,
+};
 
 let drawing = false;
 
 // --- 1. Initialization and Canvas Setup ---
 
-// Set the drawing style (black brush on a white background)
 function initializeCanvas() {
-    ctx.lineWidth = 20; // Thick brush size for digit drawing
+    ctx.lineWidth = 20;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'black';
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height); // Initialize with white background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// Set the wire canvas to the full size of its container
+function initializeWireCanvas() {
+    const container = document.getElementById('network-diagram');
+    wireCanvas.width = container.clientWidth;
+    wireCanvas.height = container.clientHeight;
 }
 
 // --- 2. Drawing Event Handlers ---
 
-// Start drawing when the mouse button is pressed
 canvas.addEventListener('mousedown', (e) => {
     drawing = true;
     ctx.beginPath();
-    // Start drawing at the mouse position
     ctx.moveTo(e.offsetX, e.offsetY);
 });
 
-// Continue drawing lines while the mouse button is held down and the mouse moves
 canvas.addEventListener('mousemove', (e) => {
     if (!drawing) return;
-    // Draw line to the current mouse position
     ctx.lineTo(e.offsetX, e.offsetY);
     ctx.stroke();
 });
 
-// Stop drawing when the mouse button is released
 canvas.addEventListener('mouseup', () => {
     drawing = false;
-    // Call the prediction function every time the user lifts the pen
     predictDigit();
 });
 
-// Stop drawing if the mouse leaves the canvas area
 canvas.addEventListener('mouseleave', () => {
     drawing = false;
 });
 
+// --- 3. Core Functions ---
 
-// --- 3. Core Functions (Stage 2/3/4) ---
-
-// Function to clear the canvas (called by the button)
 function clearCanvas() {
-    ctx.fillRect(0, 0, canvas.width, canvas.height); // Reset to white background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     predictionOutput.textContent = 'Draw a digit to see the prediction!';
-    // Also reset visualization
     resetVisualization();
 }
 
-// Resets the score bars to 0 height
 function resetVisualization() {
-    const bars = document.querySelectorAll('.score-bar');
-    bars.forEach(bar => {
-        bar.style.height = '0%';
-        bar.style.backgroundColor = '#ccc';
+    // Clear the connection lines
+    wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
+
+    // Reset output node styles
+    const outputNodes = document.querySelectorAll('.layer-output .node');
+    outputNodes.forEach(node => {
+        node.classList.remove('predicted');
+        node.style.backgroundColor = 'rgba(0, 123, 255, 0.3)';
+        node.style.transform = 'scale(1)';
     });
 }
 
-
-// Function to send the image to the FastAPI backend
 async function predictDigit() {
-    // 1. Convert the Canvas drawing to a Blob (file-like object, PNG format)
-    // We get a promise that resolves with the Blob
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-
-    // 2. Create FormData object to send the file
     const formData = new FormData();
-    // 'image' must match the FastAPI endpoint parameter name
     formData.append('image', blob, 'digit.png');
 
     predictionOutput.textContent = 'Predicting...';
 
     try {
-        // 3. Send the image to the FastAPI endpoint
         const response = await fetch(API_URL, {
             method: 'POST',
             body: formData
         });
 
         if (!response.ok) {
-            // Handle server errors (e.g., 404, 500)
             const errorData = await response.json();
-            throw new Error(`API Error ${response.status}: ${errorData.detail || 'Failed to connect/process.'}`);
+            throw new Error(`API Error ${response.status}: ${errorData.detail || 'Failed to connect.'}`);
         }
 
-        // 4. Parse the JSON response
         const result = await response.json();
-        const predicted_digit = result.prediction;
-        const scores = result.scores; // This is the list of 10 probabilities
+        const {
+            prediction,
+            scores
+        } = result;
 
-        // 5. Update the prediction display
-        const confidence = scores[predicted_digit] * 100;
+        const confidence = scores[prediction] * 100;
         predictionOutput.innerHTML =
-            `Prediction: <strong>${predicted_digit}</strong> (Confidence: ${confidence.toFixed(2)}%)`;
+            `Prediction: <strong>${prediction}</strong> (Confidence: ${confidence.toFixed(2)}%)`;
 
-        // 6. Start the visualization (Stage 4)
-        visualizeNetwork(scores, predicted_digit);
+        visualizeNetwork(scores, prediction);
 
     } catch (error) {
         console.error("Prediction failed:", error);
-        predictionOutput.textContent = `Prediction Error: ${error.message}. Is the FastAPI server running?`;
+        predictionOutput.textContent = `Error: ${error.message}`;
         resetVisualization();
     }
 }
 
+// --- 4. Visualization Logic ---
 
-// --- 4. Visualization Logic (Stage 4) ---
+// Function to create the nodes for each layer
+function createNetworkNodes() {
+    for (const [layerId, nodeCount] of Object.entries(LAYERS)) {
+        const layerDiv = document.getElementById(layerId);
+        // Add a class to identify the layer type from its ID
+        layerDiv.classList.add(layerId.split('-')[1]); // e.g., 'input', 'hidden', 'output'
 
-// Function to generate the 10 score bars in the HTML
-function generateScoreBars() {
-    for (let i = 0; i < 10; i++) {
-        const barWrapper = document.createElement('div');
-        barWrapper.classList.add('score-bar');
-        barWrapper.dataset.index = i; // Store the digit index
-        scoreBarsContainer.appendChild(barWrapper);
+        for (let i = 0; i < nodeCount; i++) {
+            const node = document.createElement('div');
+            node.classList.add('node');
+            if (layerId === 'layer-output') {
+                node.textContent = i; // Label output nodes 0-9
+                node.dataset.index = i;
+            }
+            layerDiv.appendChild(node);
+        }
     }
 }
 
-// Function to update the score bars visually
-function visualizeNetwork(finalScores, predictedDigit) {
-    const bars = document.querySelectorAll('.score-bar');
+// Main function to draw the network visualization
+function visualizeNetwork(scores, predictedDigit) {
+    // 1. Clear previous state
+    resetVisualization();
 
-    finalScores.forEach((score, index) => {
-        const bar = bars[index];
-        const confidence = score * 100;
+    const outputNodes = document.querySelectorAll('.layer-output .node');
 
-        // Update bar height based on confidence
-        bar.style.height = `${confidence}%`;
-
-        // Highlight the predicted digit
-        if (index === predictedDigit) {
-            bar.style.backgroundColor = '#28a745'; // Green for the predicted digit
-        } else {
-            // A subtle blue color based on score for non-predicted digits
-            bar.style.backgroundColor = `rgba(0, 123, 255, ${0.3 + score * 0.7})`;
-        }
+    // 2. Update output node styles based on scores
+    scores.forEach((score, index) => {
+        const node = outputNodes[index];
+        const confidence = Math.max(0.1, score); // Ensure even low scores are slightly visible
+        node.style.backgroundColor = `rgba(0, 123, 255, ${confidence})`;
     });
+
+    // 3. Highlight the predicted node
+    const predictedNode = document.querySelector(`.layer-output .node[data-index='${predictedDigit}']`);
+    if (predictedNode) {
+        predictedNode.classList.add('predicted');
+        predictedNode.style.backgroundColor = '#28a745'; // Override with prediction color
+    }
+
+    // 4. Draw connection wires
+    drawConnections(predictedNode);
+}
+
+
+// Function to draw the connection lines on the canvas
+function drawConnections(predictedNode) {
+    wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
+    wireCtx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    wireCtx.lineWidth = 1;
+
+    const layerIds = Object.keys(LAYERS);
+
+    for (let i = 0; i < layerIds.length - 1; i++) {
+        const fromLayer = document.getElementById(layerIds[i]);
+        const toLayer = document.getElementById(layerIds[i + 1]);
+
+        const fromNodes = fromLayer.querySelectorAll('.node');
+        const toNodes = toLayer.querySelectorAll('.node');
+
+        fromNodes.forEach(fromNode => {
+            toNodes.forEach(toNode => {
+                // Highlight connections leading to the predicted output
+                if (toNode === predictedNode) {
+                    wireCtx.strokeStyle = 'rgba(40, 167, 69, 0.5)'; // Greenish, semi-transparent
+                    wireCtx.lineWidth = 2;
+                } else {
+                    wireCtx.strokeStyle = 'rgba(204, 204, 204, 0.2)'; // Faint gray
+                    wireCtx.lineWidth = 1;
+                }
+                drawConnector(fromNode, toNode);
+            });
+        });
+    }
+}
+
+
+// Helper to draw a single line between two node elements
+function drawConnector(node1, node2) {
+    const rect1 = node1.getBoundingClientRect();
+    const rect2 = node2.getBoundingClientRect();
+    const containerRect = wireCanvas.getBoundingClientRect();
+
+    // Calculate centers relative to the canvas
+    const startX = rect1.left + rect1.width / 2 - containerRect.left;
+    const startY = rect1.top + rect1.height / 2 - containerRect.top;
+    const endX = rect2.left + rect2.width / 2 - containerRect.left;
+    const endY = rect2.top + rect2.height / 2 - containerRect.top;
+
+    wireCtx.beginPath();
+    wireCtx.moveTo(startX, startY);
+    wireCtx.lineTo(endX, endY);
+    wireCtx.stroke();
 }
 
 
 // --- RUNTIME EXECUTION ---
-// 1. Initialize the canvas background
+// 1. Setup the drawing area
 initializeCanvas();
-// 2. Create the 10 bars in the HTML
-generateScoreBars();
+// 2. Create the HTML nodes for the network diagram
+createNetworkNodes();
+// 3. Setup the canvas for drawing the connection lines
+initializeWireCanvas();
+// 4. Redraw lines if window is resized
+window.addEventListener('resize', () => {
+    initializeWireCanvas();
+    // Optionally, redraw the last state if you store it, or just clear
+    resetVisualization();
+});
