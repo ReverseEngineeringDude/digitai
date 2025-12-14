@@ -1,0 +1,167 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.drawing-area {
+    flex: 1;
+}
+
+/* Canvas Styling */
+#drawing-canvas {
+    border: 5px solid #007bff;
+    background-color: #f8f8f8;
+    cursor: crosshair;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.controls button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.prediction-box {
+    margin-top: 20px;
+    padding: 15px;
+    border: 2px solid #28a745;
+    background-color: #e2f0d9;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+}
+
+.visualization-area {
+    flex: 1.5;
+}
+
+/* Score Visualization Styling */
+#output-visualization {
+    display: flex;
+    flex-direction: column;
+    height: 300px;
+    /* Define a fixed height for the bar chart area */
+    margin-top: 20px;
+}
+
+.score-bars {
+    display: flex;
+    align-items: flex-end;
+    /* Bars grow upwards */
+    height: 100%;
+    border-bottom: 1px solid #ccc;
+    gap: 5px;
+}
+
+.score-bar {
+    width: 10%;
+    /* 10 bars = 10% each */
+    background-color: #007bff;
+    transition: height 0.3s ease-out;
+    /* Smooth transition for updates */
+    margin-right: 2px;
+}
+
+.score-labels {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    padding-top: 5px;
+    font-weight: bold;
+}
+
+.score-labels span {
+    width: 10%;
+    text-align: center;
+}
+
+/* --- Network Diagram Styles --- */
+.network-diagram {
+    position: relative;
+    width: 500px;
+    height: 300px;
+    margin: 20px auto;
+}
+
+#network-wires {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    /* Lines drawn underneath nodes */
+}
+
+.layer-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    /* Nodes sit on top of lines */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+}
+
+/* Hidden Layer Styling */
+.layer-hidden {
+    position: relative;
+    height: 100%;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: flex-start;
+}
+
+.hidden-node {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #0099ff;
+    transition: opacity 0.1s;
+    margin: 1px 0;
+}
+
+/* Output Layer Styling */
+#layer-output {
+    position: relative;
+    height: 100%;
+    width: 35%;
+}
+
+/* Ensure bars are correctly sized for the new layout */
+.score-bars {
+    height: 80%;
+}

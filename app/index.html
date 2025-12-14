@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwritten Digit Classifier Visualization</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <header>
+        <h1>Neural Network Digit Visualizer</h1>
+        <p>Draw a digit (0-9) on the canvas to see the CNN's prediction and activation scores.</p>
+    </header>
+
+    <main class="container">
+
+        <section class="drawing-area">
+            <h2>Draw Here</h2>
+            <canvas id="drawing-canvas" width="280" height="280"></canvas>
+
+            <div class="controls">
+                <button onclick="clearCanvas()">Clear</button>
+            </div>
+
+            <div id="prediction-output" class="prediction-box">
+                Draw a digit to see the prediction!
+            </div>
+        </section>
+
+        <section class="visualization-area">
+            <h2>Output Scores (Activation)</h2>
+            <p>Confidence score for each digit (0-9) based on the input drawing.</p>
+
+            <div id="output-visualization">
+                <div class="score-bars">
+                </div>
+
+                <div class="score-labels">
+                    <span>0</span>
+                    <span>1</span>
+                    <span>2</span>
+                    <span>3</span>
+                    <span>4</span>
+                    <span>5</span>
+                    <span>6</span>
+                    <span>7</span>
+                    <span>8</span>
+                    <span>9</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Backend: Python FastAPI/TensorFlow. Frontend: HTML/CSS/JavaScript.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
