@@ -7,9 +7,8 @@ const wireCanvas = document.getElementById('network-wires');
 const wireCtx = wireCanvas.getContext('2d');
 
 // --- Network Structure ---
-// Simplified for visualization purposes
 const LAYERS = {
-    'layer-input': 20,
+    'layer-input': 784, // 28x28 pixels
     'layer-hidden-1': 16,
     'layer-hidden-2': 12,
     'layer-output': 10,
@@ -27,7 +26,6 @@ function initializeCanvas() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-// Set the wire canvas to the full size of its container
 function initializeWireCanvas() {
     const container = document.getElementById('network-diagram');
     wireCanvas.width = container.clientWidth;
@@ -46,6 +44,8 @@ canvas.addEventListener('mousemove', (e) => {
     if (!drawing) return;
     ctx.lineTo(e.offsetX, e.offsetY);
     ctx.stroke();
+    // Update the input layer visualization in real-time
+    updateInputLayerVisualization();
 });
 
 canvas.addEventListener('mouseup', () => {
@@ -63,13 +63,11 @@ function clearCanvas() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     predictionOutput.textContent = 'Draw a digit to see the prediction!';
     resetVisualization();
+    updateInputLayerVisualization(); // Also clear the input grid
 }
 
 function resetVisualization() {
-    // Clear the connection lines
     wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
-
-    // Reset output node styles
     const outputNodes = document.querySelectorAll('.layer-output .node');
     outputNodes.forEach(node => {
         node.classList.remove('predicted');
@@ -82,7 +80,6 @@ async function predictDigit() {
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const formData = new FormData();
     formData.append('image', blob, 'digit.png');
-
     predictionOutput.textContent = 'Predicting...';
 
     try {
@@ -117,18 +114,16 @@ async function predictDigit() {
 
 // --- 4. Visualization Logic ---
 
-// Function to create the nodes for each layer
 function createNetworkNodes() {
     for (const [layerId, nodeCount] of Object.entries(LAYERS)) {
         const layerDiv = document.getElementById(layerId);
-        // Add a class to identify the layer type from its ID
-        layerDiv.classList.add(layerId.split('-')[1]); // e.g., 'input', 'hidden', 'output'
+        layerDiv.classList.add(layerId.split('-')[1]);
 
         for (let i = 0; i < nodeCount; i++) {
             const node = document.createElement('div');
             node.classList.add('node');
             if (layerId === 'layer-output') {
-                node.textContent = i; // Label output nodes 0-9
+                node.textContent = i;
                 node.dataset.index = i;
             }
             layerDiv.appendChild(node);
@@ -136,37 +131,55 @@ function createNetworkNodes() {
     }
 }
 
-// Main function to draw the network visualization
-function visualizeNetwork(scores, predictedDigit) {
-    // 1. Clear previous state
-    resetVisualization();
+// New function to update the 28x28 input grid
+function updateInputLayerVisualization() {
+    // Create a temporary 28x28 canvas to downscale the drawing
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 28;
+    tempCanvas.height = 28;
+    const tempCtx = tempCanvas.getContext('2d');
 
+    // Draw the 280x280 canvas content onto the 28x28 canvas
+    tempCtx.drawImage(canvas, 0, 0, 28, 28);
+
+    // Get the pixel data from the downscaled canvas
+    const imageData = tempCtx.getImageData(0, 0, 28, 28).data;
+    const inputNodes = document.querySelectorAll('.layer-input .node');
+
+    for (let i = 0; i < inputNodes.length; i++) {
+        // The model preprocesses by inverting, so we do the same for visualization
+        // We look at the red channel (imageData[i * 4]), but it's grayscale so R,G,B are the same
+        const pixelValue = imageData[i * 4];
+        const invertedValue = 255 - pixelValue; // Invert it
+        const intensity = invertedValue / 255; // Normalize to 0-1
+
+        // Update the background color of the node
+        inputNodes[i].style.backgroundColor = `rgba(0, 0, 0, ${intensity})`;
+    }
+}
+
+
+function visualizeNetwork(scores, predictedDigit) {
+    resetVisualization();
     const outputNodes = document.querySelectorAll('.layer-output .node');
 
-    // 2. Update output node styles based on scores
     scores.forEach((score, index) => {
         const node = outputNodes[index];
-        const confidence = Math.max(0.1, score); // Ensure even low scores are slightly visible
-        node.style.backgroundColor = `rgba(0, 123, 255, ${confidence})`;
+        const confidence = Math.max(0.1, score);
+        node.style.backgroundColor = `rgba(0, 123, 255, ${confidence * 0.8 + 0.2})`;
     });
 
-    // 3. Highlight the predicted node
     const predictedNode = document.querySelector(`.layer-output .node[data-index='${predictedDigit}']`);
     if (predictedNode) {
         predictedNode.classList.add('predicted');
-        predictedNode.style.backgroundColor = '#28a745'; // Override with prediction color
     }
 
-    // 4. Draw connection wires
     drawConnections(predictedNode);
 }
 
 
-// Function to draw the connection lines on the canvas
 function drawConnections(predictedNode) {
     wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
-    wireCtx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
-    wireCtx.lineWidth = 1;
 
     const layerIds = Object.keys(LAYERS);
 
@@ -179,28 +192,25 @@ function drawConnections(predictedNode) {
 
         fromNodes.forEach(fromNode => {
             toNodes.forEach(toNode => {
+                let strokeStyle = 'rgba(204, 204, 204, 0.05)';
+                let lineWidth = 0.5;
+
                 // Highlight connections leading to the predicted output
                 if (toNode === predictedNode) {
-                    wireCtx.strokeStyle = 'rgba(40, 167, 69, 0.5)'; // Greenish, semi-transparent
-                    wireCtx.lineWidth = 2;
-                } else {
-                    wireCtx.strokeStyle = 'rgba(204, 204, 204, 0.2)'; // Faint gray
-                    wireCtx.lineWidth = 1;
+                    strokeStyle = 'rgba(40, 167, 69, 0.4)';
+                    lineWidth = 1.5;
                 }
-                drawConnector(fromNode, toNode);
+                drawConnector(fromNode, toNode, strokeStyle, lineWidth);
             });
         });
     }
 }
 
-
-// Helper to draw a single line between two node elements
-function drawConnector(node1, node2) {
+function drawConnector(node1, node2, strokeStyle, lineWidth) {
     const rect1 = node1.getBoundingClientRect();
     const rect2 = node2.getBoundingClientRect();
     const containerRect = wireCanvas.getBoundingClientRect();
 
-    // Calculate centers relative to the canvas
     const startX = rect1.left + rect1.width / 2 - containerRect.left;
     const startY = rect1.top + rect1.height / 2 - containerRect.top;
     const endX = rect2.left + rect2.width / 2 - containerRect.left;
@@ -209,20 +219,19 @@ function drawConnector(node1, node2) {
     wireCtx.beginPath();
     wireCtx.moveTo(startX, startY);
     wireCtx.lineTo(endX, endY);
+    wireCtx.strokeStyle = strokeStyle;
+    wireCtx.lineWidth = lineWidth;
     wireCtx.stroke();
 }
 
 
 // --- RUNTIME EXECUTION ---
-// 1. Setup the drawing area
 initializeCanvas();
-// 2. Create the HTML nodes for the network diagram
 createNetworkNodes();
-// 3. Setup the canvas for drawing the connection lines
 initializeWireCanvas();
-// 4. Redraw lines if window is resized
+updateInputLayerVisualization(); // Initial empty grid
+
 window.addEventListener('resize', () => {
     initializeWireCanvas();
-    // Optionally, redraw the last state if you store it, or just clear
     resetVisualization();
 });

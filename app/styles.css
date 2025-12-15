@@ -96,7 +96,24 @@ section {
     z-index: 2; /* Nodes are on top */
 }
 
-.layer-input,
+.layer-input {
+    display: grid;
+    grid-template-columns: repeat(28, 4px);
+    grid-template-rows: repeat(28, 4px);
+    gap: 1px;
+    background-color: #efefef;
+    padding: 5px;
+    border: 1px solid #ddd;
+}
+
+.layer-input .node {
+    width: 4px;
+    height: 4px;
+    background-color: #e0e0e0;
+    transition: background-color 0.1s ease;
+    border-radius: 0; /* Make it a square pixel */
+}
+
 .layer-hidden,
 .layer-output {
     height: 100%;
@@ -112,14 +129,10 @@ section {
     transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-.layer-input .node {
-    width: 4px;
-    height: 4px;
-}
-
 .layer-hidden .node {
     width: 8px;
     height: 8px;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
 }
 
 .layer-output .node {
@@ -132,9 +145,11 @@ section {
     font-size: 10px;
     color: white;
     font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
 }
 
 .layer-output .node.predicted {
     background-color: #28a745; /* Green for predicted */
     transform: scale(1.2); /* Make it pop */
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
 }
